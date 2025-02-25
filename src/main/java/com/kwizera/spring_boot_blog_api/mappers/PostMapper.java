@@ -5,8 +5,10 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
 import com.kwizera.spring_boot_blog_api.domain.CreatePostRequest;
+import com.kwizera.spring_boot_blog_api.domain.UpdatePostRequest;
 import com.kwizera.spring_boot_blog_api.domain.Dtos.CreatePostRequestDto;
 import com.kwizera.spring_boot_blog_api.domain.Dtos.PostDto;
+import com.kwizera.spring_boot_blog_api.domain.Dtos.UpdatePostRequestDto;
 import com.kwizera.spring_boot_blog_api.domain.entities.Post;
 
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.IGNORE)
@@ -17,6 +19,8 @@ public interface PostMapper {
     @Mapping(target = "tags", source = "tags")
     PostDto tDto(Post post);
 
-    CreatePostRequest tCreatePostRequest(CreatePostRequestDto dto);
+    CreatePostRequest toCreatePostRequest(CreatePostRequestDto dto);
+
+    UpdatePostRequest toUpdatePostRequest(UpdatePostRequestDto dto);
 
 }

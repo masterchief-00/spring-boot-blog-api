@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,12 +14,14 @@ import com.kwizera.spring_boot_blog_api.Services.PostService;
 import com.kwizera.spring_boot_blog_api.Services.TagService;
 import com.kwizera.spring_boot_blog_api.domain.CreatePostRequest;
 import com.kwizera.spring_boot_blog_api.domain.PostStatus;
+import com.kwizera.spring_boot_blog_api.domain.UpdatePostRequest;
 import com.kwizera.spring_boot_blog_api.domain.entities.Category;
 import com.kwizera.spring_boot_blog_api.domain.entities.Post;
 import com.kwizera.spring_boot_blog_api.domain.entities.Tag;
 import com.kwizera.spring_boot_blog_api.domain.entities.User;
 import com.kwizera.spring_boot_blog_api.repositories.PostRepository;
 
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -86,6 +89,49 @@ public class PostServiceImpl implements PostService {
 
         int wordcount = content.trim().split("\\s+").length;
         return (int) Math.ceil((double) wordcount / WORDS_PER_MINUTE);
+    }
+
+    @Transactional
+    @Override
+    public Post updatePost(UUID id, UpdatePostRequest updatePostRequest) {
+        Post foundPost = postRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Post not found with id: " + id));
+
+        foundPost.setTitle(updatePostRequest.getTitle());
+        foundPost.setContent(updatePostRequest.getContent());
+        foundPost.setStatus(updatePostRequest.getStatus());
+        foundPost.setReadingTime(calculateReadingTime(updatePostRequest.getContent()));
+
+        UUID updatePostRequestCategory = updatePostRequest.getCategoryId();
+
+        if (!foundPost.getCategory().getId().equals(updatePostRequest.getCategoryId())) {
+            Category newCategory = categoryServices.getCategoryById(updatePostRequestCategory);
+            foundPost.setCategory(newCategory);
+        }
+
+        Set<UUID> existingTagIds = foundPost.getTags().stream().map(Tag::getId).collect(Collectors.toSet());
+        Set<UUID> updatePostTagIds = updatePostRequest.getTagIds();
+
+        if (!existingTagIds.equals(updatePostTagIds)) {
+            List<Tag> newTags = tagService.getTagByIds(updatePostTagIds);
+
+            foundPost.setTags(new HashSet<>(newTags));
+        }
+
+        return postRepository.save(foundPost);
+    }
+
+    @Override
+    public Post getPost(UUID id) {
+        return postRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Post not found with id: " + id));
+    }
+
+    @Override
+    public void deletePost(UUID id) {
+        Post post = getPost(id);
+
+        postRepository.delete(post);
     }
 
 }
